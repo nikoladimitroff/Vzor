@@ -26,5 +26,8 @@
     <ClInclude Include="..\include\vzor\vzor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TestTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

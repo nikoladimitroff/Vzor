@@ -1,3 +1,4 @@
+import os
 import re
 
 FILE_PATH = "test.h"
@@ -35,7 +36,7 @@ class ReflectedVariable:
     def __str__(self):
         constness = ("", "const")[self.is_const]
         templateness = "<{}>".format(self.template_params) if self.template_params is not None else ""
-        return "[{}] {} {}{} {};".format(self.attributes, constness, self.namespace or "", self.type, self.name, templateness)
+        return "[{}] {} {}{}{} {};".format(self.attributes, constness, self.namespace or "", self.type, templateness, self.name)
 
 
 class ReflectedFunction:
@@ -45,6 +46,13 @@ class ReflectedFunction:
         self.args = []
         self.is_const = False
 
+def static_id_counter():
+    if not hasattr(static_id_counter, "count"):
+        static_id_counter.count = -1
+
+    static_id_counter.count += 1
+    return static_id_counter.count
+
 class ReflectedType:
     def __init__(self, name, base_list, attribute_list):
         self.name = name
@@ -52,6 +60,7 @@ class ReflectedType:
         self.attributes = attribute_list
         self.methods = []
         self.data_members = []
+        self.id = static_id_counter()
 
     @property
     def fully_qualified_name(self):
@@ -152,23 +161,67 @@ def get_primitive_types_data():
     ]
 
 
-def reflect_file(source, destination):
+def reflect_file(source):
     file_contents = read_file(source)
     types = get_primitive_types_data() + list(reflect_all_classes(file_contents))
 
-    generated_data = ""
-    generated_data += "#include <array>\n"
-    generated_data += f"static std::array<ReflectedType, {len(types)}> AllReflectedTypes = \n"
-    generated_data += "{"
-    generated_type_data = [generate_reflection_data_for_type(t) for t in types]
-    generated_data += ",".join(generated_type_data)
-    generated_data += "\n};\n"
+    return types
+
+
+def update_type_refs(types):
+    for type in types:
+        for var in type.data_members:
+            var.type = next(t for t in types if t.name == var.type) #///todo namespace
+
+
+def generate_header(types, destination):
+    type_id_func_template = """
+SPECIALIZE({}, {})
+"""
+    all_type_ids = [type_id_func_template.format(t.name, t.id) for t in types]
 
     with open(destination, "w") as f:
-        f.write(generated_data)
+        f.write("".join(all_type_ids))
 
+def generate_type_registrator(type):
+    def gen_variable(var):
+        return f"ReflectedVariable({var.type.id}, \"{var.name}\", {var.offset})"
+
+    member_sep = ",\n\t\t\t\t"
+    registrator = f"""
+        static TypeRegistrator Registrator_{type.name}({{
+            {type.id}, "{type.name}",
+            {{
+                {member_sep.join(gen_variable(v) for v in type.data_members)}
+            }}
+        }});"""
+    return registrator
+
+def generate_database(reflected_types, destination):
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    template = read_file(os.path.join(root_dir, "vzor_database_template.cpp"))
+
+    indent = "\t\t"
+    array_definition = f"{indent}static std::array<ReflectedType, {len(reflected_types)}> AllReflectedTypes;\n"
+    generated_data = "\n\t".join(generate_type_registrator(t) for t in reflected_types)
+
+    marker_registrators = "// REFLECTED DATA BEGINS HERE\n\n"
+    marker_array = "// REFLECTED ARRAY DEFINITION HERE\n"
+    marker_data_start = template.find(marker_registrators)
+    marker_array_start = template.find(marker_array)
+    database = template[:marker_array_start + len(marker_array) + 1] + \
+        array_definition + \
+        template[marker_array_start + len(marker_array):marker_data_start + len(marker_registrators) + 1] + \
+        generated_data + \
+        template[marker_data_start + len(marker_registrators):]
+
+    with open(destination, "w") as f:
+        f.write(database)
 
 def main():
-    reflect_file("OgledaloTest/test.h", "OgledaloTest/test.g.h")
+    reflected_types = reflect_file("tests/TestTypes.h")
+    update_type_refs(reflected_types)
+    generate_header(reflected_types, "tests/vzorgenerated/TestTypes.h")
+    generate_database(reflected_types, "tests/vzor_database.cpp")
 
 main()
