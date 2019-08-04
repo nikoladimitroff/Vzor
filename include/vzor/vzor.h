@@ -5,8 +5,32 @@
 
 namespace Vzor
 {
-	using TypeIdentifier = unsigned int;
-	constexpr TypeIdentifier InvalidTypeIdentifier = static_cast<TypeIdentifier>(-1);
+	struct TypeIdentifier
+	{
+		constexpr TypeIdentifier()
+			: Id(static_cast<unsigned int>(-1))
+		{}
+		explicit constexpr TypeIdentifier(unsigned int value)
+			: Id(value)
+		{}
+		TypeIdentifier(const TypeIdentifier&) = default;
+		TypeIdentifier& operator=(const TypeIdentifier&) = default;
+		inline constexpr bool operator==(const TypeIdentifier other) const
+		{
+			return Id == other.Id;
+		}
+		inline constexpr bool operator!=(const TypeIdentifier other) const
+		{
+			return !(Id == other.Id);
+		}
+		constexpr unsigned int GetValue() const
+		{
+			return Id;
+		}
+	private:
+		unsigned int Id;
+	};
+	constexpr TypeIdentifier InvalidTypeIdentifier = TypeIdentifier();
 
 	class ReflectedVariable
 	{
@@ -44,6 +68,7 @@ namespace Vzor
 		const TypeIdentifier TypeId = InvalidTypeIdentifier;
 		const char* Name = nullptr;
 		const std::array<ReflectedVariable, 32> DataMembers;
+		const std::array<TypeIdentifier, 4> BaseTypes;
 	};
 
 	template<class T>
@@ -53,7 +78,7 @@ namespace Vzor
 	}
 
 	#define SPECIALIZE(Type, Value) \
-	template<> constexpr TypeIdentifier TypeIdOf<Type>() { return Value; }
+	template<> constexpr TypeIdentifier TypeIdOf<Type>() { return TypeIdentifier(Value); }
 
 	namespace Detail
 	{
@@ -68,11 +93,11 @@ namespace Vzor
 	template<typename T>
 	inline const ReflectedType& TypeOf()
 	{
-		return Detail::AllReflectedTypes[TypeIdOf<T>()];
+		return Detail::AllReflectedTypes[TypeIdOf<T>().GetValue()];
 	}
 
-	inline const ReflectedType& TypeOf(int typeId)
+	inline const ReflectedType& TypeOf(TypeIdentifier typeId)
 	{
-		return Detail::AllReflectedTypes[typeId];
+		return Detail::AllReflectedTypes[typeId.GetValue()];
 	}
 };

@@ -35,5 +35,8 @@
     <ClInclude Include="TransformData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AnimalHierarchy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

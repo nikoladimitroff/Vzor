@@ -2,6 +2,7 @@ import functools
 import os
 from os import path
 import re
+import sys
 
 PRIMITIVE_TYPES_HEADER_NAME = "VzorPrimitiveTypes.h"
 DATABASE_FILE_NAME = "VzorDatabase.cpp"
@@ -158,6 +159,7 @@ f"""
 
 def get_primitive_types_data():
     return [
+        ReflectedType("bool", [], []),
         ReflectedType("char", [], []),
         ReflectedType("int", [], []),
         ReflectedType("float", [], []),
@@ -170,9 +172,17 @@ def reflect_file(source):
 
 
 def update_type_refs(types):
+    def find_type_by_name(types, name):
+        result = next((t for t in types if t.name == name), None)
+        if result is None:
+            print(f"Type {name} is referenced in a reflected data but is not reflected itself!")
+            sys.exit(-1)
+        return result
+
     for type in types:
         for var in type.data_members:
-            var.type = next(t for t in types if t.name == var.type) #///todo namespace
+            var.type = find_type_by_name(types, var.type) #///todo namespace
+        type.base_list = [find_type_by_name(types, base_name) for base_name in type.base_list]
 
 
 def generate_header(types, destination):
@@ -196,10 +206,11 @@ def generate_type_registrator(type):
     member_sep = ",\n\t\t\t\t"
     registrator = f"""
         static TypeRegistrator Registrator_{type.name}({{
-            {type.id}, "{type.name}",
+            TypeIdentifier({type.id}u), "{type.name}",
             {{
                 {member_sep.join(gen_variable(v) for v in type.data_members)}
-            }}
+            }},
+            {{ {", ".join(f"TypeIdentifier({t.id}u)" for t in type.base_list)} }},
         }});"""
     return registrator
 

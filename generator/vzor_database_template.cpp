@@ -9,7 +9,7 @@ namespace Vzor
 		{
 			TypeRegistrator(ReflectedType&& type)
 			{
-				std::memcpy(&ImplReflectedTypesList[type.TypeId * sizeof(ReflectedType)], &type, sizeof(ReflectedType));
+				std::memcpy(&ImplReflectedTypesList[type.TypeId.GetValue() * sizeof(ReflectedType)], &type, sizeof(ReflectedType));
 			}
 		};
 

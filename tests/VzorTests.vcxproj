@@ -133,6 +133,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\vzor\vzor.h" />
+    <ClInclude Include="AnimalHierarchy.h" />
     <ClInclude Include="TransformData.h" />
     <ClInclude Include="GeometryPrimitives.h" />
   </ItemGroup>

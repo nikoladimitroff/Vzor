@@ -2,6 +2,7 @@
 #include "doctest/doctest.h"
 #include "GeometryPrimitives.h"
 #include "TransformData.h"
+#include "AnimalHierarchy.h"
 
 struct ReflectedVarDescription
 {
@@ -17,7 +18,9 @@ void CheckVariable(const Vzor::ReflectedVariable& var, const ReflectedVarDescrip
 }
 
 template<typename T>
-void CheckType(const char* expectedName, std::initializer_list<ReflectedVarDescription> expectedMembers)
+void CheckType(const char* expectedName,
+	std::initializer_list<ReflectedVarDescription> expectedMembers,
+	std::initializer_list<Vzor::TypeIdentifier> expectedBaseTypes)
 {
 	const Vzor::ReflectedType& typeInfo = Vzor::TypeOf<T>();
 
@@ -32,6 +35,22 @@ void CheckType(const char* expectedName, std::initializer_list<ReflectedVarDescr
 	{
 		CheckVariable(typeInfo.DataMembers[i], *(expectedMembers.begin() + i));
 	}
+
+	const auto baseCount = std::count_if(
+		typeInfo.BaseTypes.begin(), typeInfo.BaseTypes.end(), [](auto& m) { return m != Vzor::InvalidTypeIdentifier; });
+	REQUIRE_EQ(baseCount, expectedBaseTypes.size());
+	for (int i = 0; i < baseCount; i++)
+	{
+		CHECK_EQ(typeInfo.BaseTypes[i], *(expectedBaseTypes.begin() + i));
+	}
+}
+
+
+template<typename T>
+void CheckType(const char* expectedName,
+	std::initializer_list<ReflectedVarDescription> expectedMembers)
+{
+	CheckType<T>(expectedName, expectedMembers, {});
 }
 
 SCENARIO("Types are reflected accurately")
@@ -48,22 +67,60 @@ SCENARIO("Types are reflected accurately")
 	GIVEN("A 2nd trivial user class in the same file")
 	{
 		CheckType<Quaternion>("Quaternion",
-			{
-				{"X", Vzor::TypeIdOf<float>()},
-				{"Y", Vzor::TypeIdOf<float>()},
-				{"Z", Vzor::TypeIdOf<float>()},
-				{"W", Vzor::TypeIdOf<float>()},
-			});
+		{
+			{"X", Vzor::TypeIdOf<float>()},
+			{"Y", Vzor::TypeIdOf<float>()},
+			{"Z", Vzor::TypeIdOf<float>()},
+			{"W", Vzor::TypeIdOf<float>()},
+		});
 	}
 
 	GIVEN("A user class using another user class in a separate file")
 	{
 		CheckType<TransformData>("TransformData",
+		{
+			{"Rotation", Vzor::TypeIdOf<Quaternion>()},
+			{"Translation", Vzor::TypeIdOf<Vector3>()},
+			{"Scale", Vzor::TypeIdOf<float>()},
+		});
+	}
+
+	GIVEN("A complex class hierarchy")
+	{
+		AND_THEN("A base class")
+		{
+			CheckType<Animal>("Animal",
 			{
-				{"Rotation", Vzor::TypeIdOf<Quaternion>()},
-				{"Translation", Vzor::TypeIdOf<Vector3>()},
-				{"Scale", Vzor::TypeIdOf<float>()},
+				{"Identifier", Vzor::TypeIdOf<int>()},
 			});
+		}
+		AND_THEN("A bunch of subclasses")
+		{
+			CheckType<Mammal>("Mammal",
+			{
+				{"PregnancyLength", Vzor::TypeIdOf<int>()},
+			},
+				{Vzor::TypeIdOf<Animal>()}
+			);
+			CheckType<Canine>("Canine",
+				{
+					{"PreyIdentifier", Vzor::TypeIdOf<int>()},
+				},
+				{ Vzor::TypeIdOf<Mammal>() }
+			);
+			CheckType<Dog>("Dog",
+				{
+					{"BreedIdentifier", Vzor::TypeIdOf<int>()},
+				},
+				{ Vzor::TypeIdOf<Canine>() }
+			);
+			CheckType<Wolf>("Wolf",
+				{
+					{"IsAlpha", Vzor::TypeIdOf<bool>()},
+				},
+				{ Vzor::TypeIdOf<Canine>() }
+			);
+		}
 	}
 }
 
