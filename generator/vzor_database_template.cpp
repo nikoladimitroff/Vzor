@@ -4,13 +4,12 @@ namespace Vzor
 {
 	namespace Database
 	{
-		// REFLECTED ARRAY DEFINITION HERE
-
+		static std::array<char, /*REFLECTED_TYPES_COUNT*/ * sizeof(ReflectedType)> ImplReflectedTypesList;
 		struct TypeRegistrator
 		{
 			TypeRegistrator(ReflectedType&& type)
 			{
-				std::memcpy(&AllReflectedTypes[type.TypeId], &type, sizeof(ReflectedType));
+				std::memcpy(&ImplReflectedTypesList[type.TypeId * sizeof(ReflectedType)], &type, sizeof(ReflectedType));
 			}
 		};
 
@@ -18,7 +17,7 @@ namespace Vzor
 		{
 			ReflectedDatabaseInitializer()
 			{
-				Vzor::Detail::AllReflectedTypes = &AllReflectedTypes[0];
+				Vzor::Detail::AllReflectedTypes = reinterpret_cast<const ReflectedType*>(ImplReflectedTypesList.data());
 			}
 		} VzorInitializer;
 

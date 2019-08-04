@@ -207,17 +207,15 @@ def generate_database(reflected_types, destination):
     root_dir = os.path.dirname(os.path.abspath(__file__))
     template = read_file(os.path.join(root_dir, "vzor_database_template.cpp"))
 
-    indent = "\t\t"
-    array_definition = f"{indent}static std::array<ReflectedType, {len(reflected_types)}> AllReflectedTypes;\n"
+    # Fill in the number of reflected types
+    template = template.replace("/*REFLECTED_TYPES_COUNT*/", str(len(reflected_types)))
+
     generated_data = "\n\t".join(generate_type_registrator(t) for t in reflected_types)
 
     marker_registrators = "// REFLECTED DATA BEGINS HERE\n\n"
-    marker_array = "// REFLECTED ARRAY DEFINITION HERE\n"
     marker_data_start = template.find(marker_registrators)
-    marker_array_start = template.find(marker_array)
-    database = template[:marker_array_start + len(marker_array) + 1] + \
-        array_definition + \
-        template[marker_array_start + len(marker_array):marker_data_start + len(marker_registrators) + 1] + \
+    database = \
+        template[:marker_data_start + len(marker_registrators) + 1] + \
         generated_data + \
         template[marker_data_start + len(marker_registrators):]
 

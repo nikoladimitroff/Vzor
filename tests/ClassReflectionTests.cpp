@@ -6,7 +6,7 @@
 struct ReflectedVarDescription
 {
 	const char* Name;
-	Vzor::TypeId Type;
+	Vzor::TypeIdentifier Type;
 };
 
 void CheckVariable(const Vzor::ReflectedVariable& var, const ReflectedVarDescription& expected)
@@ -21,6 +21,7 @@ void CheckType(const char* expectedName, std::initializer_list<ReflectedVarDescr
 {
 	const Vzor::ReflectedType& typeInfo = Vzor::TypeOf<T>();
 
+	REQUIRE(typeInfo.IsValid());
 	REQUIRE_EQ(typeInfo.TypeId, Vzor::TypeIdOf<T>());
 	REQUIRE_EQ(typeInfo.Name, expectedName);
 

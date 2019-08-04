@@ -5,6 +5,9 @@
 
 namespace Vzor
 {
+	using TypeIdentifier = unsigned int;
+	constexpr TypeIdentifier InvalidTypeIdentifier = static_cast<TypeIdentifier>(-1);
+
 	class ReflectedVariable
 	{
 	public:
@@ -15,13 +18,13 @@ namespace Vzor
 		{}
 		bool IsValid() const
 		{
-			return Name != nullptr;
+			return TypeId != InvalidTypeIdentifier;
 		}
 		operator bool() const
 		{
 			return IsValid();
 		}
-		const int TypeId = -1;
+		const TypeIdentifier TypeId = InvalidTypeIdentifier;
 		const char* Name = nullptr;
 		const void* OffsetToBase = 0x0;
 	};
@@ -29,21 +32,28 @@ namespace Vzor
 	class ReflectedType
 	{
 	public:
-		int TypeId;
-		const char* Name = "";
-		std::array<ReflectedVariable, 32> DataMembers;
+		bool IsValid() const
+		{
+			return TypeId != InvalidTypeIdentifier;
+		}
+		operator bool() const
+		{
+			return IsValid();
+		}
+
+		const TypeIdentifier TypeId = InvalidTypeIdentifier;
+		const char* Name = nullptr;
+		const std::array<ReflectedVariable, 32> DataMembers;
 	};
 
-	using TypeId = unsigned int;
-
 	template<class T>
-	constexpr TypeId TypeIdOf()
+	constexpr TypeIdentifier TypeIdOf()
 	{
 		assert(false);
 	}
 
 	#define SPECIALIZE(Type, Value) \
-	template<> constexpr TypeId TypeIdOf<Type>() { return Value; }
+	template<> constexpr TypeIdentifier TypeIdOf<Type>() { return Value; }
 
 	namespace Detail
 	{
