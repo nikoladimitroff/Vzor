@@ -18,7 +18,7 @@ namespace Vzor
 		{
 			ReflectedDatabaseInitializer()
 			{
-				Vzor::Detail::AllReflectedTypes = AllReflectedTypes;
+				Vzor::Detail::AllReflectedTypes = &AllReflectedTypes[0];
 			}
 		} VzorInitializer;
 

@@ -18,7 +18,10 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="vzor_database.cpp">
+    <ClCompile Include="ClassReflectionTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vzorgenerated\VzorDatabase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -26,7 +29,10 @@
     <ClInclude Include="..\include\vzor\vzor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TestTypes.h">
+    <ClInclude Include="GeometryPrimitives.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

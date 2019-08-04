@@ -1,7 +1,10 @@
+import functools
 import os
+from os import path
 import re
 
-FILE_PATH = "test.h"
+PRIMITIVE_TYPES_HEADER_NAME = "VzorPrimitiveTypes.h"
+DATABASE_FILE_NAME = "VzorDatabase.cpp"
 # Check groups <attr>, <typename>, <bases>
 ATTR_LIST = r"(?P<attr>\((?:[\w_]+(?:(?:[\w_],)+)*)?\))?"
 CLASS_REGEX = fr"(class|struct)\s*\[\[reflect::type{ATTR_LIST}\]\]\s*(?P<typename>\w+)(?:\s*:\s*(?P<bases>(?:public|private|protected)\s+\w+)(?:,\s*(?:public|private|protected)\s+\w+)*)?"
@@ -163,9 +166,7 @@ def get_primitive_types_data():
 
 def reflect_file(source):
     file_contents = read_file(source)
-    types = get_primitive_types_data() + list(reflect_all_classes(file_contents))
-
-    return types
+    return list(reflect_all_classes(file_contents))
 
 
 def update_type_refs(types):
@@ -175,13 +176,18 @@ def update_type_refs(types):
 
 
 def generate_header(types, destination):
-    type_id_func_template = """
-SPECIALIZE({}, {})
-"""
-    all_type_ids = [type_id_func_template.format(t.name, t.id) for t in types]
+    file_start = f"""#pragma once
+#include "{PRIMITIVE_TYPES_HEADER_NAME}"
+namespace Vzor
+{{
+\t"""
+    all_type_ids = [f"SPECIALIZE({t.name}, {t.id}u)" for t in types]
 
+    file_end = """
+}
+"""
     with open(destination, "w") as f:
-        f.write("".join(all_type_ids))
+        f.write(file_start + "\n\t".join(all_type_ids) + file_end)
 
 def generate_type_registrator(type):
     def gen_variable(var):
@@ -218,10 +224,41 @@ def generate_database(reflected_types, destination):
     with open(destination, "w") as f:
         f.write(database)
 
-def main():
-    reflected_types = reflect_file("tests/TestTypes.h")
-    update_type_refs(reflected_types)
-    generate_header(reflected_types, "tests/vzorgenerated/TestTypes.h")
-    generate_database(reflected_types, "tests/vzor_database.cpp")
 
-main()
+def get_file_extension(filepath):
+    filepath, extension = path.splitext(filepath)
+    return extension
+
+def gather_files_in_paths(filepaths):
+    all_files = []
+    for fsnode in filepaths:
+        if path.isfile(fsnode):
+            all_files.append(fsnode)
+        elif path.isdir(fsnode):
+            all_files += [fsnode + f for f in os.listdir(fsnode)]
+
+    return (f for f in all_files if get_file_extension(f) in (".h", ".hpp"))
+
+
+def main(filepaths_to_reflect, destination_dir):
+    # Gather file list
+    all_files = gather_files_in_paths(filepaths_to_reflect)
+    types_per_file = {}
+    types_per_file[PRIMITIVE_TYPES_HEADER_NAME] = get_primitive_types_data()
+
+    # Reflect everything
+    for filepath in all_files:
+        print(f"Reflecting {filepath}")
+        types_per_file[filepath] = reflect_file(filepath)
+
+    # Flatten the list and generate all the data
+    all_reflected_types = [t for types_in_file in types_per_file.values() for t in types_in_file]
+    update_type_refs(all_reflected_types)
+    generate_database(all_reflected_types, path.join(destination_dir, DATABASE_FILE_NAME))
+    for filepath, reflected_types in types_per_file.items():
+        print(f"Generated {filepath}")
+        header_name = path.basename(filepath)
+        generate_header(reflected_types, path.join(destination_dir, header_name))
+
+
+main(["tests/"], "tests/vzorgenerated")

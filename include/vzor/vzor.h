@@ -13,9 +13,13 @@ namespace Vzor
 		ReflectedVariable(const int id, const char* name, const void* offset)
 			: TypeId(id), Name(name), OffsetToBase(offset)
 		{}
-		operator bool() const
+		bool IsValid() const
 		{
 			return Name != nullptr;
+		}
+		operator bool() const
+		{
+			return IsValid();
 		}
 		const int TypeId = -1;
 		const char* Name = nullptr;
@@ -30,33 +34,34 @@ namespace Vzor
 		std::array<ReflectedVariable, 32> DataMembers;
 	};
 
+	using TypeId = unsigned int;
 
 	template<class T>
-	constexpr int TypeIdOf()
+	constexpr TypeId TypeIdOf()
 	{
 		assert(false);
 	}
 
 	#define SPECIALIZE(Type, Value) \
-	template<> constexpr int TypeIdOf<Type>() { return Value; }
+	template<> constexpr TypeId TypeIdOf<Type>() { return Value; }
 
 	namespace Detail
 	{
 		// TODO IMPORTANT: AUTO FILL PRIMITIVE TYPES
-		extern ReflectedType* AllReflectedTypes;
+		extern const ReflectedType* AllReflectedTypes;
 
 #ifdef VZOR_IMPLEMENT
-		ReflectedType* Vzor::Detail::AllReflectedTypes = nullptr;
+		const ReflectedType* Vzor::Detail::AllReflectedTypes = nullptr;
 #endif
 	}
 
 	template<typename T>
-	constexpr ReflectedType& GetTypeInfo()
+	inline const ReflectedType& TypeOf()
 	{
 		return Detail::AllReflectedTypes[TypeIdOf<T>()];
 	}
 
-	constexpr ReflectedType& GetTypeInfo(int typeId)
+	inline const ReflectedType& TypeOf(int typeId)
 	{
 		return Detail::AllReflectedTypes[typeId];
 	}

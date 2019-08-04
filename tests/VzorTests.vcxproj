@@ -127,12 +127,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ClassReflectionTests.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="vzor_database.cpp" />
+    <ClCompile Include="vzorgenerated\VzorDatabase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\vzor\vzor.h" />
-    <ClInclude Include="TestTypes.h" />
+    <ClInclude Include="TransformData.h" />
+    <ClInclude Include="GeometryPrimitives.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
