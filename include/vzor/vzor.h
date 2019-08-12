@@ -2,6 +2,7 @@
 // TODO: Remove dependency
 #include <array>
 #include <cassert>
+#include <type_traits>
 
 namespace Vzor
 {
@@ -71,15 +72,6 @@ namespace Vzor
 		const std::array<TypeIdentifier, 4> BaseTypes;
 	};
 
-	template<class T>
-	constexpr TypeIdentifier TypeIdOf()
-	{
-		assert(false);
-	}
-
-	#define SPECIALIZE(Type, Value) \
-	template<> constexpr TypeIdentifier TypeIdOf<Type>() { return TypeIdentifier(Value); }
-
 	namespace Detail
 	{
 		// TODO IMPORTANT: AUTO FILL PRIMITIVE TYPES
@@ -89,6 +81,31 @@ namespace Vzor
 		const ReflectedType* Vzor::Detail::AllReflectedTypes = nullptr;
 #endif
 	}
+
+	template<typename T>
+	// TODO: RENAME
+	struct TypeIdS : std::integral_constant<unsigned int, (unsigned int)-1>
+	{
+	};
+
+	template<typename T>
+		constexpr
+		TypeIdentifier
+		TypeIdOf()
+	{
+		//assert(false);
+		return TypeIdentifier(TypeIdS<T>::value);
+	}
+
+#define SPECIALIZE(Type, Value) \
+	template<> \
+	struct TypeIdS<Type> : public std::integral_constant<unsigned int, Value> \
+	{};
+
+#define SPECIALIZE_TEMPLATED(Type, Value) \
+	template<typename InnerClass> \
+	struct TypeIdS<Type<InnerClass>> : public std::integral_constant<unsigned int, Value> \
+	{};
 
 	template<typename T>
 	inline const ReflectedType& TypeOf()
