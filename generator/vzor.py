@@ -162,6 +162,7 @@ def get_primitive_types_data():
         ReflectedType("bool", [], []),
         ReflectedType("char", [], []),
         ReflectedType("int", [], []),
+        ReflectedType("size_t", [], []),
         ReflectedType("float", [], []),
     ]
 
@@ -261,6 +262,9 @@ def main(filepaths_to_reflect, destination_dir):
         types_per_file[filepath] = reflect_file(filepath)
 
     # Flatten the list and generate all the data
+    if not path.isdir(destination_dir):
+        os.makedirs(destination_dir)
+
     all_reflected_types = [t for types_in_file in types_per_file.values() for t in types_in_file]
     update_type_refs(all_reflected_types)
     generate_database(all_reflected_types, path.join(destination_dir, DATABASE_FILE_NAME))
