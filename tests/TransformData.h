@@ -11,4 +11,12 @@ class [[reflect::type]] TransformData
 	float Scale;
 };
 
-#include "vzorgenerated/TransformData.h"
+class [[reflect::type]] TransformManager
+{
+	[[reflect::data]]
+	const Vector3& GlobalTranslationOffset;
+	[[reflect::data]]
+	TransformData* PlayerTransform;
+};
+
+#include "vzorgenerated/TransformData.h" 

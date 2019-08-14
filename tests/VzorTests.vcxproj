@@ -129,11 +129,14 @@
   <ItemGroup>
     <ClCompile Include="ClassReflectionTests.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="TemplatedReflectionTests.cpp" />
     <ClCompile Include="vzorgenerated\VzorDatabase.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\vzor\vzor.h" />
     <ClInclude Include="AnimalHierarchy.h" />
+    <ClInclude Include="CustomContainers.h" />
+    <ClInclude Include="TestHelpers.h" />
     <ClInclude Include="TransformData.h" />
     <ClInclude Include="GeometryPrimitives.h" />
   </ItemGroup>

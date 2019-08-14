@@ -9,7 +9,7 @@ namespace Vzor
 	struct TypeIdentifier
 	{
 		constexpr TypeIdentifier()
-			: Id(static_cast<unsigned int>(-1))
+			: Id(static_cast<uint32_t>(-1))
 		{}
 		explicit constexpr TypeIdentifier(unsigned int value)
 			: Id(value)
@@ -24,12 +24,12 @@ namespace Vzor
 		{
 			return !(Id == other.Id);
 		}
-		constexpr unsigned int GetValue() const
+		constexpr uint32_t GetValue() const
 		{
 			return Id;
 		}
 	private:
-		unsigned int Id;
+		uint32_t Id;
 	};
 	constexpr TypeIdentifier InvalidTypeIdentifier = TypeIdentifier();
 
@@ -37,10 +37,18 @@ namespace Vzor
 	{
 	public:
 		ReflectedVariable()
+			: IsConst(false)
+			, IsRef(false)
 		{}
-		ReflectedVariable(const int id, const char* name, const void* offset)
-			: TypeId(id), Name(name), OffsetToBase(offset)
+		ReflectedVariable(const uint32_t id, const char* name, uint8_t pointerLevels, bool isConst, bool isRef, const void* offset)
+			: TypeId(id), Name(name)
+			, PointerLevels(pointerLevels), IsConst(isConst), IsRef(isRef)
+			, OffsetToBase(offset)
 		{}
+		bool IsPointer() const
+		{
+			return PointerLevels > 0;
+		}
 		bool IsValid() const
 		{
 			return TypeId != InvalidTypeIdentifier;
@@ -49,9 +57,13 @@ namespace Vzor
 		{
 			return IsValid();
 		}
-		const TypeIdentifier TypeId = InvalidTypeIdentifier;
 		const char* Name = nullptr;
 		const void* OffsetToBase = 0x0;
+		const TypeIdentifier TypeId = InvalidTypeIdentifier;
+		const unsigned char PointerLevels = 0u;
+		// Can't inline initialize bit fields until C++20
+		const bool IsConst : 1;
+		const bool IsRef : 1;
 	};
 
 	class ReflectedType

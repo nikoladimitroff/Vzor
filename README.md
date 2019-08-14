@@ -21,7 +21,8 @@ See the tests project for examples.
 2. Reflecting nested classes
 3. No support for types in different namespaces with the same names.
 4. No docs
-5. Pointer and reference support
+5. No Pointer and reference support
+    1. No support for const in pointers (e.g. `Foo const *`)
 6. Performance / stress / sanity tests
 7. Support for accessing actual property / function values (atm you can see a description of the properties, but can't access their value)
 8. Support for functions

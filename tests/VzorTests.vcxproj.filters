@@ -24,6 +24,9 @@
     <ClCompile Include="vzorgenerated\VzorDatabase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TemplatedReflectionTests.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\vzor\vzor.h">
@@ -36,6 +39,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AnimalHierarchy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomContainers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TestHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

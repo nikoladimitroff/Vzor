@@ -4,10 +4,22 @@
 #include "TransformData.h"
 #include "AnimalHierarchy.h"
 
+namespace VarFlags
+{
+	enum VarFlags
+	{
+		None = 0x0,
+		IsRef = 0x1,
+		IsConst = 0x2,
+		IsPointer = 0x3
+	};
+}
+
 struct ReflectedVarDescription
 {
 	const char* Name;
-	Vzor::TypeIdentifier Type;
+	const Vzor::TypeIdentifier Type;
+	const VarFlags::VarFlags Flags;
 };
 
 void CheckVariable(const Vzor::ReflectedVariable& var, const ReflectedVarDescription& expected)
@@ -15,6 +27,9 @@ void CheckVariable(const Vzor::ReflectedVariable& var, const ReflectedVarDescrip
 	REQUIRE(var.IsValid());
 	CHECK_EQ(var.Name, expected.Name);
 	CHECK_EQ(var.TypeId, expected.Type);
+	CHECK_EQ(var.IsRef, expected.Flags & VarFlags::IsRef);
+	CHECK_EQ(var.IsConst, expected.Flags & VarFlags::IsConst);
+	CHECK_EQ(var.IsPointer(), expected.Flags & VarFlags::IsPointer);
 }
 
 template<typename T>
@@ -121,6 +136,15 @@ SCENARIO("Types are reflected accurately")
 				{ Vzor::TypeIdOf<Canine>() }
 			);
 		}
+	}
+
+	GIVEN("A user class with pointers and refs")
+	{
+		CheckType<TransformManager>("TransformManager",
+			{
+				//{"GlobalTranslationOffset", Vzor::TypeIdOf<Vector3>(), VarFlags::IsConst | VarFlags::IsRef},
+				{"PlayerTransform", Vzor::TypeIdOf<TransformData>(), VarFlags::IsPointer},
+			});
 	}
 }
 

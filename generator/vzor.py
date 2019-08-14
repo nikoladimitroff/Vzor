@@ -10,7 +10,7 @@ DATABASE_FILE_NAME = "VzorDatabase.cpp"
 ATTR_LIST = r"(?P<attr>\((?:[\w_]+(?:(?:[\w_],)+)*)?\))?"
 CLASS_REGEX = fr"(class|struct)\s*\[\[reflect::type{ATTR_LIST}\]\]\s*(?P<typename>\w+)(?:\s*:\s*(?P<bases>(?:public|private|protected)\s+\w+)(?:,\s*(?:public|private|protected)\s+\w+)*)?"
 # Check groups <attr>, <const>, <namespace>, <type>, <templates>, <name>
-VAR_REGEX = fr"\[\[reflect::data{ATTR_LIST}\]\]\s*(?P<const>const)?\s*(?P<namespace>\w*::)*(?P<type>\w+)(?P<templates><[\w_,\s]*>)?\s+(?P<name>[\w_]+);"
+VAR_REGEX = fr"\[\[reflect::data{ATTR_LIST}\]\]\s*(?P<const>const)?\s*(?P<namespace>\w*::)*(?P<type>\w+)(?P<templates><[\w_,\s]*>)?(?P<pointer>(\*|\s|const)+)?(?P<ref>&)?\s+(?P<name>[\w_]+);"
 
 def read_file(path):
     with open(path) as f:
@@ -19,13 +19,15 @@ def read_file(path):
 
 class ReflectedVariable:
     # TODO: REF / PTR SUPPORT
-    def __init__(self, name, namespace, type, attribute_list, is_const, template_params):
+    def __init__(self, name, namespace, type, attribute_list, template_params, pointer_levels, is_const, is_ref):
         self.name = name
         self.namespace = namespace
         self.type = type
         self.attributes = attribute_list
-        self.is_const = is_const
         self.template_params = template_params
+        self.pointer_levels = pointer_levels
+        self.is_ref = is_ref
+        self.is_const = is_const
 
     @property
     def fully_qualified_name(self):
@@ -36,6 +38,10 @@ class ReflectedVariable:
     def offset(self):
         # TODO: COMPUTE ACTUAL OFFSET
         return "0x0"
+
+    @property
+    def is_pointer(self):
+        return self.pointer_levels > 0
 
     def __str__(self):
         constness = ("", "const")[self.is_const]
@@ -101,7 +107,9 @@ def reflect_members_in_section(source):
         namespaces = match["namespace"]
         template_params = match["templates"]
         attributes = attribute_match_to_list(match["attr"])
-        data_member = ReflectedVariable(name, namespaces, type, attributes, is_const, template_params)
+        pointer_levels = match["pointer"].count("*") if match["pointer"] else 0
+        is_ref = match["ref"] is not None
+        data_member = ReflectedVariable(name, namespaces, type, attributes, template_params, pointer_levels, is_const, is_ref)
         members.append(data_member)
 
     return members
@@ -139,7 +147,8 @@ def reflect_all_classes(source):
 def generate_reflection_data_for_member(data_member):
     #{ type_id<float>(), "X", 0x0 },
     return \
-f"""ReflectedVariable(type_id<{data_member.fully_qualified_name}>(), "{data_member.name}", {data_member.offset})"""
+f"""ReflectedVariable(type_id<{data_member.fully_qualified_name}>(), "{data_member.name}", """ +\
+f"""{data_member.pointer_levels}, {data_member.is_const}, {data_member.is_ref}, {data_member.offset})"""
 
 
 def generate_reflection_data_for_type(type):
@@ -200,9 +209,15 @@ namespace Vzor
     with open(destination, "w") as f:
         f.write(file_start + "\n\t".join(all_type_ids) + file_end)
 
+
+def emit_bool(value):
+    return str(value).lower()
+
+
 def generate_type_registrator(type):
     def gen_variable(var):
-        return f"ReflectedVariable({var.type.id}, \"{var.name}\", {var.offset})"
+        return f"ReflectedVariable({var.type.id}, \"{var.name}\", " + \
+               f"{var.pointer_levels}, {emit_bool(var.is_const)}, {emit_bool(var.is_ref)}, {var.offset})"""
 
     member_sep = ",\n\t\t\t\t"
     registrator = f"""
