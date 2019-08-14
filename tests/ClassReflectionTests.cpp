@@ -11,7 +11,7 @@ namespace VarFlags
 		None = 0x0,
 		IsRef = 0x1,
 		IsConst = 0x2,
-		IsPointer = 0x3
+		IsPointer = 0x4
 	};
 }
 
@@ -27,9 +27,9 @@ void CheckVariable(const Vzor::ReflectedVariable& var, const ReflectedVarDescrip
 	REQUIRE(var.IsValid());
 	CHECK_EQ(var.Name, expected.Name);
 	CHECK_EQ(var.TypeId, expected.Type);
-	CHECK_EQ(var.IsRef, expected.Flags & VarFlags::IsRef);
-	CHECK_EQ(var.IsConst, expected.Flags & VarFlags::IsConst);
-	CHECK_EQ(var.IsPointer(), expected.Flags & VarFlags::IsPointer);
+	CHECK_EQ(var.IsRef, bool(expected.Flags & VarFlags::IsRef));
+	CHECK_EQ(var.IsConst, bool(expected.Flags & VarFlags::IsConst));
+	CHECK_EQ(var.IsPointer(), bool(expected.Flags & VarFlags::IsPointer));
 }
 
 template<typename T>
@@ -142,7 +142,7 @@ SCENARIO("Types are reflected accurately")
 	{
 		CheckType<TransformManager>("TransformManager",
 			{
-				//{"GlobalTranslationOffset", Vzor::TypeIdOf<Vector3>(), VarFlags::IsConst | VarFlags::IsRef},
+				{"GlobalTranslationOffset", Vzor::TypeIdOf<Vector3>(), static_cast<VarFlags::VarFlags>(VarFlags::IsConst | VarFlags::IsRef)},
 				{"PlayerTransform", Vzor::TypeIdOf<TransformData>(), VarFlags::IsPointer},
 			});
 	}
