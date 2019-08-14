@@ -17,14 +17,12 @@ See the tests project for examples.
 
 ## Missing features
 
-1. Templates
-2. Reflecting nested classes
-3. No support for types in different namespaces with the same names.
-4. No docs
-5. No Pointer and reference support
-    1. No support for const in pointers (e.g. `Foo const *`)
-6. Performance / stress / sanity tests
-7. Support for accessing actual property / function values (atm you can see a description of the properties, but can't access their value)
-8. Support for functions
-9. Support for enums
-10. Better error reporting
+1. Reflecting nested classes
+1. No support for types in different namespaces with the same names.
+1. No docs
+1. No support for const in pointers (e.g. `Foo const *`)
+1. Performance / stress / sanity tests
+1. Support for accessing actual property / function values (atm you can see a description of the properties, but can't access their value)
+1. Support for functions
+1. Support for enums
+1. Better error reporting
