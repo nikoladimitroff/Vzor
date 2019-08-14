@@ -8,7 +8,7 @@ PRIMITIVE_TYPES_HEADER_NAME = "VzorPrimitiveTypes.h"
 DATABASE_FILE_NAME = "VzorDatabase.cpp"
 # Check groups <attr>, <typename>, <bases>
 ATTR_LIST = r"(?P<attr>\((?:[\w_]+(?:(?:[\w_],)+)*)?\))?"
-CLASS_REGEX = fr"(class|struct)\s*\[\[reflect::type{ATTR_LIST}\]\]\s*(?P<typename>\w+)(?:\s*:\s*(?P<bases>(?:public|private|protected)\s+\w+)(?:,\s*(?:public|private|protected)\s+\w+)*)?"
+CLASS_REGEX = fr"((?P<templates>template)[\s\S]*?)?(class|struct)\s*\[\[reflect::type{ATTR_LIST}\]\]\s*(?P<typename>\w+)(?:\s*:\s*(?P<bases>(?:public|private|protected)\s+\w+)(?:,\s*(?:public|private|protected)\s+\w+)*)?"
 # Check groups <attr>, <const>, <namespace>, <type>, <templates>, <name>
 VAR_REGEX = fr"\[\[reflect::data{ATTR_LIST}\]\]\s*(?P<const>const)?\s*(?P<namespace>\w*::)*(?P<type>\w+)(?P<templates><[\w_,\s]*>)?(?P<pointer>(\*|\s|const)+)?(?P<ref>&)?\s+(?P<name>[\w_]+);"
 
@@ -64,10 +64,11 @@ def static_id_counter():
     return static_id_counter.count
 
 class ReflectedType:
-    def __init__(self, name, base_list, attribute_list):
+    def __init__(self, name, base_list, attribute_list, is_templated):
         self.name = name
         self.base_list = base_list
         self.attributes = attribute_list
+        self.is_templated = is_templated
         self.methods = []
         self.data_members = []
         self.id = static_id_counter()
@@ -138,7 +139,9 @@ def reflect_all_classes(source):
         name = match["typename"]
         base_list = base_match_to_list(match["bases"])
         attributes = attribute_match_to_list(match["attr"])
-        type = ReflectedType(name, base_list, attributes)
+        is_templated = match["templates"] is not None
+        print (name, match["templates"])
+        type = ReflectedType(name, base_list, attributes, is_templated)
         definition_start = source.find("{", match.end())
         assert(definition_start >= 0)
         type.data_members = reflect_members_in_class(source, definition_start)
@@ -168,11 +171,11 @@ f"""
 
 def get_primitive_types_data():
     return [
-        ReflectedType("bool", [], []),
-        ReflectedType("char", [], []),
-        ReflectedType("int", [], []),
-        ReflectedType("size_t", [], []),
-        ReflectedType("float", [], []),
+        ReflectedType("bool", [], [], False),
+        ReflectedType("char", [], [], False),
+        ReflectedType("int", [], [], False),
+        ReflectedType("size_t", [], [], False),
+        ReflectedType("float", [], [], False),
     ]
 
 
@@ -201,7 +204,8 @@ def generate_header(types, destination):
 namespace Vzor
 {{
 \t"""
-    all_type_ids = [f"SPECIALIZE({t.name}, {t.id}u)" for t in types]
+    specialize_type = lambda t: "SPECIALIZE_TEMPLATED" if t.is_templated else "SPECIALIZE"
+    all_type_ids = [f"{specialize_type(t)}({t.name}, {t.id}u)" for t in types]
 
     file_end = """
 }
