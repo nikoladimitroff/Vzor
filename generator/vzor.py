@@ -273,6 +273,7 @@ def gather_files_in_paths(filepaths):
 
 
 def main(filepaths_to_reflect, destination_dir):
+    print("---Running Vzor reflection generator---")
     # Gather file list
     all_files = gather_files_in_paths(filepaths_to_reflect)
     types_per_file = {}
@@ -294,6 +295,8 @@ def main(filepaths_to_reflect, destination_dir):
         print(f"Generated {filepath}")
         header_name = path.basename(filepath)
         generate_header(reflected_types, path.join(destination_dir, header_name))
+    
+    print("---Vzor reflection data generated---")
 
 
 main(["tests/"], "tests/vzorgenerated")
