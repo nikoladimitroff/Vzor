@@ -4,7 +4,7 @@ Vzor is a reflection library for C++. Unlike other existing reflection systems, 
 
 Vzor firstly runs a python program which extracts valuable information from your code and then generates a database-like file containing all of the information necessary, accessible from your C++.
 
-ATM the library is close to unusable but come back in some time to check. I am happy to hear your feedback, so do scroll below for an overview and let me know what you think (open an issue or contact me directly over email).
+The library is a work in progress - unstable and unusable. I am happy to hear your feedback, so do scroll below for an overview and let me know what you think (open an issue or contact me directly over email).
 
 ## Requirements
 
