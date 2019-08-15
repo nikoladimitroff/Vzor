@@ -1,7 +1,7 @@
 #pragma once
 #include "GeometryPrimitives.h"
 
-class [[reflect::type]] TransformData
+class [[reflect::type]] TransformData : public Vzor::EnableReflectionFromThis<TransformData>
 {
 	[[reflect::data]]
 	Quaternion Rotation;

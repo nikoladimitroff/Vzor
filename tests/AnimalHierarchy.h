@@ -6,19 +6,19 @@ class [[reflect::type]] Animal
 	int Identifier;
 };
 
-class [[reflect::type]] Mammal : public Animal
+class [[reflect::type]] Mammal : public Animal, public virtual Vzor::EnableReflectionFromThis<Mammal>
 {
 	[[reflect::data]]
 	int PregnancyLength;
 };
 
-class [[reflect::type]] Canine : public Mammal
+class [[reflect::type]] Canine : public Mammal, public virtual Vzor::EnableReflectionFromThis<Canine>
 {
 	[[reflect::data]]
 	int PreyIdentifier;
 };
 
-class [[reflect::type]] Dog : public Canine
+class [[reflect::type]] Dog : public Canine, public virtual Vzor::EnableReflectionFromThis<Dog>
 {
 	[[reflect::data]]
 	int BreedIdentifier;

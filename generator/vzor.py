@@ -8,7 +8,7 @@ PRIMITIVE_TYPES_HEADER_NAME = "VzorPrimitiveTypes.h"
 DATABASE_FILE_NAME = "VzorDatabase.cpp"
 # Check groups <attr>, <typename>, <bases>
 ATTR_LIST = r"(?P<attr>\((?:[\w_]+(?:(?:[\w_],)+)*)?\))?"
-CLASS_REGEX = fr"((?P<templates>template)[\s\S]*?)?(class|struct)\s*\[\[reflect::type{ATTR_LIST}\]\]\s*(?P<typename>\w+)(?:\s*:\s*(?P<bases>(?:public|private|protected)\s+\w+)(?:,\s*(?:public|private|protected)\s+\w+)*)?"
+CLASS_REGEX = fr"((?P<templates>template)[\s\S]*?)?(class|struct)\s*\[\[reflect::type{ATTR_LIST}\]\]\s*(?P<typename>\w+)(?:\s*:\s*(?P<bases>(?:public|private|protected)\s+[\w:]+)(?:,\s*(?:public|private|protected)\s+[\w:]+)*)?"
 # Check groups <attr>, <const>, <namespace>, <type>, <templates>, <name>
 VAR_REGEX = fr"\[\[reflect::data{ATTR_LIST}\]\]\s*(?P<const>const)?\s*(?P<namespace>\w*::)*(?P<type>\w+)(?P<templates><[\w_,\s]*>)?(?P<pointer>(\*|\s|const)+)?(?P<ref>&)?\s+(?P<name>[\w_]+);"
 
@@ -92,7 +92,10 @@ def attribute_match_to_list(match):
 def base_match_to_list(match):
     if match is None:
         return []
-    return re.sub(r"public|protected|private|\s+", "", match).split(",")
+    with_namespaces = re.sub(r"public|protected|private|\s+", "", match).split(",")
+    # TODO: May be only ignore the base if some option
+    base_types = [re.sub(r"(\w+::)*(\w+)", r"\2", t) for t in with_namespaces]
+    return base_types
 
 
 def reflect_members_in_section(source):
@@ -140,7 +143,6 @@ def reflect_all_classes(source):
         base_list = base_match_to_list(match["bases"])
         attributes = attribute_match_to_list(match["attr"])
         is_templated = match["templates"] is not None
-        print (name, match["templates"])
         type = ReflectedType(name, base_list, attributes, is_templated)
         definition_start = source.find("{", match.end())
         assert(definition_start >= 0)
@@ -171,6 +173,7 @@ f"""
 
 def get_primitive_types_data():
     return [
+        ReflectedType("EnableReflectionFromThis", [], [], True),
         ReflectedType("bool", [], [], False),
         ReflectedType("char", [], [], False),
         ReflectedType("int", [], [], False),

@@ -129,4 +129,28 @@ namespace Vzor
 	{
 		return Detail::AllReflectedTypes[typeId.GetValue()];
 	}
+
+	struct RuntimeReflectionInfo
+	{
+		TypeIdentifier ReflectedTypeId;
+	};
+
+	template<typename T>
+	struct EnableReflectionFromThis : public virtual RuntimeReflectionInfo
+	{
+		EnableReflectionFromThis()
+		{
+			ReflectedTypeId = TypeIdOf<T>();
+		}
+
+		inline static const ReflectedType& StaticTypeOf()
+		{
+			return Vzor::TypeOf<T>();
+		}
+	};
+
+	inline const ReflectedType& TypeOf(const RuntimeReflectionInfo& obj)
+	{
+		return Detail::AllReflectedTypes[obj.ReflectedTypeId.GetValue()];
+	}
 };
