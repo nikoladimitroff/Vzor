@@ -106,26 +106,26 @@ SCENARIO("Types are reflected accurately")
 		{
 			CheckType<Animal>("Animal",
 			{
-				{"Identifier", Vzor::TypeIdOf<int>()},
+				{"AnimalId", Vzor::TypeIdOf<int>()},
 			});
 		}
 		AND_THEN("A bunch of subclasses")
 		{
 			CheckType<Mammal>("Mammal",
 			{
-				{"PregnancyLength", Vzor::TypeIdOf<int>()},
+				{"MammalPregnancyLength", Vzor::TypeIdOf<int>()},
 			},
 				{Vzor::TypeIdOf<Animal>()}
 			);
 			CheckType<Canine>("Canine",
 				{
-					{"PreyIdentifier", Vzor::TypeIdOf<int>()},
+					{"CaninePreyIdentifier", Vzor::TypeIdOf<int>()},
 				},
 				{ Vzor::TypeIdOf<Mammal>() }
 			);
 			CheckType<Dog>("Dog",
 				{
-					{"BreedIdentifier", Vzor::TypeIdOf<int>()},
+					{"DogBreedIdentifier", Vzor::TypeIdOf<int>()},
 				},
 				{ Vzor::TypeIdOf<Canine>() }
 			);
@@ -151,9 +151,7 @@ SCENARIO("Types are reflected accurately")
 	{
 		TransformData data;
 		const auto& typeFromInstance = Vzor::TypeOf(data);
-		const auto& typeFromStatic = TransformData::StaticTypeOf();
 		const auto& typeFromVzor = Vzor::TypeOf<TransformData>();
-		CHECK_EQ(typeFromInstance, typeFromStatic);
 		CHECK_EQ(typeFromInstance, typeFromVzor);
 	}
 
@@ -167,6 +165,32 @@ SCENARIO("Types are reflected accurately")
 		const auto& typeFromGrandparent = Vzor::TypeOf(*mammal);
 		CHECK_EQ(typeFromChild, typeFromParent);
 		CHECK_EQ(typeFromChild, typeFromGrandparent);
+	}
+
+	GIVEN("Reading the value from objects produces correct results")
+	{
+		GIVEN("a class without EnableReflectionFromThis")
+		{
+			Vector3 vec = { 2.f, 3.f, 5.f };
+			const auto& typeOfVec = Vzor::TypeOf<Vector3>();
+			CHECK_EQ(vec.X, *typeOfVec.DataMembers[0].ReadMemoryAs<float>(&vec));
+			CHECK_EQ(vec.Y, *typeOfVec.DataMembers[1].ReadMemoryAs<float>(&vec));
+			CHECK_EQ(vec.Z, *typeOfVec.DataMembers[2].ReadMemoryAs<float>(&vec));
+		}
+		GIVEN("a class with lots of bases")
+		{
+			Dog doggy;
+			srand(42);
+			doggy.AnimalId = rand();
+			doggy.MammalPregnancyLength = rand();
+			doggy.CaninePreyIdentifier = rand();
+			doggy.DogBreedIdentifier = rand();
+			const auto& typeOfDog = Vzor::TypeOf<Dog>();
+			CHECK_EQ(doggy.DogBreedIdentifier, *typeOfDog.DataMembers[0].ReadMemoryAs<int>(&doggy));
+			CHECK_EQ(doggy.CaninePreyIdentifier, *typeOfDog.GetBaseAtIndex(0).DataMembers[0].ReadMemoryAs<int>(&doggy));
+			CHECK_EQ(doggy.MammalPregnancyLength, *typeOfDog.GetBaseAtIndex(0).GetBaseAtIndex(0).DataMembers[0].ReadMemoryAs<int>(&doggy));
+			CHECK_EQ(doggy.AnimalId, *typeOfDog.GetBaseAtIndex(0).GetBaseAtIndex(0).GetBaseAtIndex(0).DataMembers[0].ReadMemoryAs<int>(&doggy));
+		}
 	}
 }
 

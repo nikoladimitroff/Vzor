@@ -40,10 +40,12 @@ namespace Vzor
 			: IsConst(false)
 			, IsRef(false)
 		{}
-		ReflectedVariable(const uint32_t id, const char* name, uint8_t pointerLevels, bool isConst, bool isRef, const void* offset)
+		ReflectedVariable(const uint32_t id, const char* name, uint8_t pointerLevels, bool isConst, bool isRef,
+			size_t size, size_t offsetToBase)
 			: TypeId(id), Name(name)
 			, PointerLevels(pointerLevels), IsConst(isConst), IsRef(isRef)
-			, OffsetToBase(offset)
+			, Size(size)
+			, OffsetToBase(offsetToBase)
 		{}
 		bool IsPointer() const
 		{
@@ -57,14 +59,23 @@ namespace Vzor
 		{
 			return IsValid();
 		}
+		template<typename T>
+		const T* ReadMemoryAs(const void* thisObject) const
+		{
+			return (T*)((const char*)thisObject + OffsetToBase);
+		}
 		const char* Name = nullptr;
-		const void* OffsetToBase = 0x0;
+		const size_t Size = 0;
+		const size_t OffsetToBase = 0;
 		const TypeIdentifier TypeId = InvalidTypeIdentifier;
 		const unsigned char PointerLevels = 0u;
 		// Can't inline initialize bit fields until C++20
 		const bool IsConst : 1;
 		const bool IsRef : 1;
 	};
+
+	class ReflectedType;
+	const ReflectedType& TypeOf(TypeIdentifier typeId);
 
 	class ReflectedType
 	{
@@ -76,6 +87,10 @@ namespace Vzor
 		operator bool() const
 		{
 			return IsValid();
+		}
+		const ReflectedType& GetBaseAtIndex(size_t index) const
+		{
+			return Vzor::TypeOf(BaseTypes[index]);
 		}
 
 		const TypeIdentifier TypeId = InvalidTypeIdentifier;
@@ -135,17 +150,39 @@ namespace Vzor
 		TypeIdentifier ReflectedTypeId;
 	};
 
+
+	enum class InheritedReflection
+	{
+		None,
+		BaseClassAlreadyReflected
+	};
+
+	template<typename T, InheritedReflection ReflectionStatus = InheritedReflection::None>
+	struct EnableReflectionFromThis;
+
 	template<typename T>
-	struct EnableReflectionFromThis : public virtual RuntimeReflectionInfo
+	struct EnableReflectionFromThis<T, InheritedReflection::None>
+		: public RuntimeReflectionInfo
 	{
 		EnableReflectionFromThis()
 		{
 			ReflectedTypeId = TypeIdOf<T>();
+			// TODO:
+			//static_assert(!std::is_base_of<RuntimeReflectionInfo, T>::value,
+			//    "If compilation fails here, you have a class whose base is also reflected. "
+			//    "Use EnableReflectionFromThis<T, InheritedReflection::BaseClassAlreadyReflected> instead.");
 		}
+	};
 
-		inline static const ReflectedType& StaticTypeOf()
+	template<typename T>
+	struct EnableReflectionFromThis<T, InheritedReflection::BaseClassAlreadyReflected>
+	{
+		EnableReflectionFromThis()
 		{
-			return Vzor::TypeOf<T>();
+			((RuntimeReflectionInfo*)this)->ReflectedTypeId = TypeIdOf<T>();
+			static_assert(std::is_base_of<RuntimeReflectionInfo, T>::value,
+				"If compilation fails here, you don't have a class whose base is also reflected. "
+				"Use EnableReflectionFromThis<T> instead.");
 		}
 	};
 

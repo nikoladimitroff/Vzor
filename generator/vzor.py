@@ -39,6 +39,7 @@ class ReflectedVariable:
         # TODO: COMPUTE ACTUAL OFFSET
         return "0x0"
 
+
     @property
     def is_pointer(self):
         return self.pointer_levels > 0
@@ -222,9 +223,17 @@ def emit_bool(value):
 
 
 def generate_type_registrator(type):
+    def offsetable_type_name(type):
+        return type.name if not type.is_templated else f"{type.name}<char>"
+
     def gen_variable(var):
+        size_and_offset = f"sizeof({offsetable_type_name(type)}::{var.name}), OffsetOf({offsetable_type_name(type)}, {var.name})" \
+            if not var.is_ref else "0, 0"
         return f"ReflectedVariable({var.type.id}, \"{var.name}\", " + \
-               f"{var.pointer_levels}, {emit_bool(var.is_const)}, {emit_bool(var.is_ref)}, {var.offset})"""
+               f"{var.pointer_levels}, {emit_bool(var.is_const)}, {emit_bool(var.is_ref)}, " + \
+                size_and_offset + \
+                ")"
+               
 
     member_sep = ",\n\t\t\t\t"
     registrator = f"""
@@ -237,7 +246,10 @@ def generate_type_registrator(type):
         }});"""
     return registrator
 
-def generate_database(reflected_types, destination):
+def generate_include_path(filepath, destination):
+    return f"#include \"{os.path.relpath(filepath, destination)}\""
+
+def generate_database(reflected_types, reflected_headers, destination_file):
     root_dir = os.path.dirname(os.path.abspath(__file__))
     template = read_file(os.path.join(root_dir, "vzor_database_template.cpp"))
 
@@ -245,15 +257,21 @@ def generate_database(reflected_types, destination):
     template = template.replace("/*REFLECTED_TYPES_COUNT*/", str(len(reflected_types)))
 
     generated_data = "\n\t".join(generate_type_registrator(t) for t in reflected_types)
+    destination_dir = os.path.dirname(destination_file)
+    generated_includes = "\n".join(generate_include_path(f, destination_dir) for f in reflected_headers)
 
     marker_registrators = "// REFLECTED DATA BEGINS HERE\n\n"
+    marker_includes = "// REFLECTED HEADER LIST BEGINS HERE\n"
     marker_data_start = template.find(marker_registrators)
+    marker_include_start = template.find(marker_includes)
     database = \
-        template[:marker_data_start + len(marker_registrators) + 1] + \
+        template[:marker_include_start + len(marker_includes)] + \
+        generated_includes + \
+        template[marker_include_start + len(marker_includes): marker_data_start + len(marker_registrators) + 1] + \
         generated_data + \
         template[marker_data_start + len(marker_registrators):]
 
-    with open(destination, "w") as f:
+    with open(destination_file, "w") as f:
         f.write(database)
 
 
@@ -269,19 +287,20 @@ def gather_files_in_paths(filepaths):
         elif path.isdir(fsnode):
             all_files += [fsnode + f for f in os.listdir(fsnode)]
 
-    return (f for f in all_files if get_file_extension(f) in (".h", ".hpp"))
+    return [os.path.abspath(f) for f in all_files if get_file_extension(f) in (".h", ".hpp")]
 
 
 def main(filepaths_to_reflect, destination_dir):
     print("---Running Vzor reflection generator---")
     # Gather file list
+    destination_dir = os.path.abspath(destination_dir)
     all_files = gather_files_in_paths(filepaths_to_reflect)
     types_per_file = {}
     types_per_file[PRIMITIVE_TYPES_HEADER_NAME] = get_primitive_types_data()
 
     # Reflect everything
     for filepath in all_files:
-        print(f"Reflecting {filepath}")
+        print(f"Reflecting {os.path.relpath(filepath)}")
         types_per_file[filepath] = reflect_file(filepath)
 
     # Flatten the list and generate all the data
@@ -290,9 +309,9 @@ def main(filepaths_to_reflect, destination_dir):
 
     all_reflected_types = [t for types_in_file in types_per_file.values() for t in types_in_file]
     update_type_refs(all_reflected_types)
-    generate_database(all_reflected_types, path.join(destination_dir, DATABASE_FILE_NAME))
+    generate_database(all_reflected_types, all_files, path.join(destination_dir, DATABASE_FILE_NAME))
     for filepath, reflected_types in types_per_file.items():
-        print(f"Generated {filepath}")
+        print(f"Generated {os.path.relpath(filepath)}")
         header_name = path.basename(filepath)
         generate_header(reflected_types, path.join(destination_dir, header_name))
     
