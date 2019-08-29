@@ -1,4 +1,5 @@
 #include "vzor/vzor.h"
+#include "vzor/vzor_attributes.h"
 #include "doctest/doctest.h"
 #include "GeometryPrimitives.h"
 #include "TransformData.h"
@@ -190,6 +191,28 @@ SCENARIO("Types are reflected accurately")
 			CHECK_EQ(doggy.CaninePreyIdentifier, *typeOfDog.GetBaseAtIndex(0).DataMembers[0].ReadMemoryAs<int>(&doggy));
 			CHECK_EQ(doggy.MammalPregnancyLength, *typeOfDog.GetBaseAtIndex(0).GetBaseAtIndex(0).DataMembers[0].ReadMemoryAs<int>(&doggy));
 			CHECK_EQ(doggy.AnimalId, *typeOfDog.GetBaseAtIndex(0).GetBaseAtIndex(0).GetBaseAtIndex(0).DataMembers[0].ReadMemoryAs<int>(&doggy));
+		}
+	}
+
+	GIVEN("Property attributes are parsed correctly")
+	{
+		GIVEN("types are passed correctly")
+		{
+			const auto& typeOfVec = Vzor::TypeOf<Vector3>();
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[0].Type, Vzor::PropertyAttribute::Foo);
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[1].Type, Vzor::PropertyAttribute::Bar);
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[2].Type, Vzor::PropertyAttribute::Baz);
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[3].Type, Vzor::PropertyAttribute::Min);
+		}
+		GIVEN("args are passed correctly")
+		{
+			const auto& typeOfVec = Vzor::TypeOf<Vector3>();
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[0].Type, Vzor::PropertyAttribute::Foo);
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[0].Args[0].AsString(), "jj");
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[0].Args[1].AsInteger(), 7);
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[0].Args[2].AsInteger(), 8);
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[3].Type, Vzor::PropertyAttribute::Min);
+			CHECK_EQ(typeOfVec.DataMembers[0].Attributes[3].Args[0].AsDouble(), 5.55);
 		}
 	}
 }

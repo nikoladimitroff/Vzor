@@ -33,6 +33,101 @@ namespace Vzor
 	};
 	constexpr TypeIdentifier InvalidTypeIdentifier = TypeIdentifier();
 
+	struct AttributeArgument
+	{
+		enum class Type
+		{
+			Invalid,
+			String,
+			Double,
+			Int,
+			Bool,
+			Compound,
+			Token
+		};
+		AttributeArgument()
+			: ValueType(Type::Invalid)
+		{}
+		AttributeArgument(int64_t value)
+			: ValueType(Type::Int)
+			, IntegerValue(value)
+		{}
+		AttributeArgument(bool value)
+			: ValueType(Type::Bool)
+			, BooleanValue(value)
+		{}
+		AttributeArgument(double value)
+			: ValueType(Type::Double)
+			, DoubleValue(value)
+		{}
+		AttributeArgument(Type argType, const char* value)
+			: ValueType(argType)
+			, TextValue(value)
+		{
+			assert(argType == Type::Token || argType == Type::Compound || argType == Type::String);
+		}
+		const char* AsString() const
+		{
+			assert(ValueType == Type::String);
+			return TextValue;
+		}
+		const char* AsToken() const
+		{
+			assert(ValueType == Type::Token);
+			return TextValue;
+		}
+		const char* AsCompound() const
+		{
+			assert(ValueType == Type::Compound);
+			return TextValue;
+		}
+		bool AsBool() const
+		{
+			assert(ValueType == Type::Bool);
+			return BooleanValue;
+		}
+		int64_t AsInteger() const
+		{
+			assert(ValueType == Type::Int);
+			return IntegerValue;
+		}
+		double AsDouble() const
+		{
+			assert(ValueType == Type::Double);
+			return DoubleValue;
+		}
+
+	private:
+		Type ValueType;
+		union
+		{
+			const char* TextValue;
+			double DoubleValue;
+			int64_t IntegerValue;
+			bool BooleanValue;
+		};
+	};
+
+	enum class TypeAttribute;
+	enum class PropertyAttribute;
+	template<typename AttributeType>
+	struct ReflectedAttribute
+	{
+		ReflectedAttribute()
+		{}
+		ReflectedAttribute(AttributeType type, std::initializer_list<AttributeArgument> args)
+			: Type(type)
+		{
+			// TODO: ASSERT INITIALIZER LIST SIZE < 4
+			for (int i = 0; i < args.size(); i++)
+			{
+				Args[i] = *(args.begin() + i);
+			}
+		}
+		AttributeType Type;
+		std::array<AttributeArgument, 4> Args;
+	};
+
 	class ReflectedVariable
 	{
 	public:
@@ -41,12 +136,19 @@ namespace Vzor
 			, IsRef(false)
 		{}
 		ReflectedVariable(const uint32_t id, const char* name, uint8_t pointerLevels, bool isConst, bool isRef,
-			size_t size, size_t offsetToBase)
+			size_t size, size_t offsetToBase,
+			std::initializer_list<ReflectedAttribute<PropertyAttribute>> attributes)
 			: TypeId(id), Name(name)
 			, PointerLevels(pointerLevels), IsConst(isConst), IsRef(isRef)
 			, Size(size)
 			, OffsetToBase(offsetToBase)
-		{}
+		{
+			// TODO: ASSERT INITIALIZER LIST SIZE < 4
+			for (int i = 0; i < attributes.size(); i++)
+			{
+				Attributes[i] = *(attributes.begin() + i);
+			}
+		}
 		bool IsPointer() const
 		{
 			return PointerLevels > 0;
@@ -69,6 +171,7 @@ namespace Vzor
 		const size_t OffsetToBase = 0;
 		const TypeIdentifier TypeId = InvalidTypeIdentifier;
 		const unsigned char PointerLevels = 0u;
+		std::array<ReflectedAttribute<PropertyAttribute>, 4> Attributes;
 		// Can't inline initialize bit fields until C++20
 		const bool IsConst : 1;
 		const bool IsRef : 1;
@@ -95,6 +198,8 @@ namespace Vzor
 
 		const TypeIdentifier TypeId = InvalidTypeIdentifier;
 		const char* Name = nullptr;
+		// TODO
+		//std::array<ReflectedAttribute<TypeAttribute>, 4> Attributes;
 		const std::array<ReflectedVariable, 32> DataMembers;
 		const std::array<TypeIdentifier, 4> BaseTypes;
 	};
