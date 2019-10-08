@@ -52,13 +52,13 @@ void CheckType(const char* expectedName,
 		CheckVariable(typeInfo.DataMembers[i], *(expectedMembers.begin() + i));
 	}
 
-	//const auto baseCount = std::count_if(
-	//	typeInfo.BaseTypes.begin(), typeInfo.BaseTypes.end(), [](auto& m) { return m != Vzor::InvalidTypeIdentifier; });
-	//REQUIRE_EQ(baseCount, expectedBaseTypes.size());
-	//for (int i = 0; i < baseCount; i++)
-	//{
-	//	CHECK_EQ(typeInfo.BaseTypes[i], *(expectedBaseTypes.begin() + i));
-	//}
+	const auto baseCount = std::count_if(
+		typeInfo.BaseTypes.begin(), typeInfo.BaseTypes.end(), [](auto& m) { return m != Vzor::InvalidTypeIdentifier; });
+	REQUIRE_EQ(baseCount, expectedBaseTypes.size());
+	for (int i = 0; i < baseCount; i++)
+	{
+		CHECK_EQ(typeInfo.BaseTypes[i], *(expectedBaseTypes.begin() + i));
+	}
 }
 
 
@@ -98,6 +98,9 @@ SCENARIO("Types are reflected accurately")
 			{"Rotation", Vzor::TypeIdOf<Quaternion>()},
 			{"Translation", Vzor::TypeIdOf<Vector3>()},
 			{"Scale", Vzor::TypeIdOf<float>()},
+		},
+		{
+			Vzor::TypeIdOf<Vzor::EnableReflectionFromThis<TransformData>>()
 		});
 	}
 
